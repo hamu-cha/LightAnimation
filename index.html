@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>光</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<style>
+  body {
+    --bs-body-font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+  }
+  html { font-size: clamp(11px, calc(0.45vw + 0.75vh + 3px), 16px); }
+  .page { max-width: 1400px; }
+  h1#pageTitle { font-size: 1.5rem; margin-bottom: .4rem !important; }
+  .nav-tabs { margin-bottom: .5rem !important; }
+  .nav-tabs .nav-link { padding: .3rem .5rem; font-size: .95rem; }
+  .card-body { padding-top: .3rem !important; padding-bottom: .3rem !important; }
+
+  @media (min-width: 768px) and (min-height: 480px) {
+    .page { height: 100vh; height: 100dvh; display: flex; flex-direction: column; padding-top: .5rem !important; padding-bottom: 0 !important; }
+    .page > section:not([hidden]) { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+    .page > section > .card { margin-bottom: .4rem !important; }
+    .page > section > svg.fig { flex: 1 1 0; min-height: 140px; height: auto; }
+    .page > section > p, .page > section > .eq { margin-bottom: .2rem !important; }
+    #controls { margin: .3rem 0 .5rem !important; }
+  }
+
+  .ctrl { display: flex; flex-wrap: wrap; align-items: center; column-gap: 1.5rem; row-gap: .25rem; margin: .2rem 0; }
+  .ctrl > label, .ctrl > .slider, .ctrl > span > label { display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap; margin: 0; }
+  .ctrl > span.sub { display: inline-flex; flex-wrap: wrap; align-items: center; column-gap: 1.5rem; row-gap: .25rem; }
+  .ctrl .form-range { width: clamp(80px, 9vw, 160px); }
+  .ctrl .form-check { margin: 0; }
+  .group { font-weight: bold; min-width: 5.5em; }
+
+  var { font-family: "Times New Roman", Times, serif; font-style: italic; font-size: 1.15em; line-height: 1; }
+  var.vec { position: relative; font-weight: bold; }
+  var.vec::before { content: "→"; position: absolute; left: 50%; top: -.72em; transform: translateX(-50%); font-size: .6em; font-style: normal; font-weight: normal; }
+  sub var { font-size: 1em; }
+  .val { display: inline-block; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+  .key { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .key::before { content: ""; width: 24px; border-top: 4px solid var(--c); }
+  .key.dash::before { border-top: 3px dashed var(--c); }
+  .key.dot::before { width: 12px; height: 12px; border: none; border-radius: 50%; background: var(--c); }
+
+  svg.fig { display: block; width: 100%; height: auto; background: #fff; margin: 0 0 6px; overflow: hidden; }
+  svg text { font-family: "Times New Roman", Times, "Hiragino Mincho ProN", serif; }
+  svg .jp { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+  svg .halo text, svg text.halo { paint-order: stroke fill; stroke: #fff; stroke-width: 6px; stroke-linejoin: round; }
+  svg text.haloD { paint-order: stroke fill; stroke: #000; stroke-width: 6px; stroke-linejoin: round; }
+
+  .eq { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .eq { display: none !important; }
+  .page > section > p.small { display: none !important; }
+  .eq .row-item { margin-right: 2rem; white-space: nowrap; display: inline-block; }
+
+  #startstop { min-width: 6.5em; }
+  .time { font-variant-numeric: tabular-nums; min-width: 6em; }
+</style>
+</head>
+<body>
+<div class="page container-fluid py-3">
+
+<div class="d-flex align-items-center flex-wrap gap-3 mb-3">
+  <h1 id="pageTitle" class="h3 mb-0">光の速さ</h1>
+  <div class="form-check form-switch mb-0 ms-auto">
+    <input id="showVal" class="form-check-input" type="checkbox" role="switch">
+    <label class="form-check-label" for="showVal">矢印に数値を表示</label>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item"><button class="nav-link active" role="tab" data-tab="tab-speed" data-title="光の速さと屈折率" aria-selected="true">光の速さ</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-refl" data-title="光の反射・屈折と全反射" aria-selected="false">反射・屈折</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-disp" data-title="白色光の分散とスペクトル" aria-selected="false">分散</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-lens" data-title="凸レンズと凹レンズ" aria-selected="false">レンズ</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-mirror" data-title="球面鏡による反射" aria-selected="false">球面鏡</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-young" data-title="ヤングの実験" aria-selected="false">ヤングの実験</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-grating" data-title="回折格子" aria-selected="false">回折格子</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-film" data-title="薄膜による干渉" aria-selected="false">薄膜</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-wedge" data-title="くさび形空気層による干渉" aria-selected="false">くさび形空気層</button></li>
+  <li class="nav-item"><button class="nav-link" role="tab" data-tab="tab-newton" data-title="ニュートンリング" aria-selected="false">ニュートンリング</button></li>
+</ul>
+
+<!-- 光の速さと屈折率 -->
+<section id="tab-speed" role="tabpanel">
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="題材">
+          <input type="radio" class="btn-check" name="spSub" id="spSubN" value="norm" checked data-reset-time>
+          <label class="btn btn-outline-success" for="spSubN">垂直に入射</label>
+          <input type="radio" class="btn-check" name="spSub" id="spSubO" value="obl" data-reset-time>
+          <label class="btn btn-outline-success" for="spSubO">斜めに入射</label>
+        </div>
+        <label>屈折率 <var>n</var> <input id="spN" class="form-range" type="range" min="1" max="2.5" step="0.1" value="1.5" data-d="1"> <span id="spNV" class="val"></span></label>
+        <label><span id="spKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="spL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="spLV" class="val"></span> nm</label>
+        <label id="spThCtrl" hidden>入射角 <var>θ</var><sub>1</sub> <input id="spTh" class="form-range" type="range" min="0" max="80" step="5" value="45" data-d="0"> <span id="spThV" class="val"></span>°</label>
+      </div>
+      <div class="ctrl">
+        <div id="spCmpWrap" class="form-check form-switch">
+          <input id="spCmp" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="spCmp">真空中と比較</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="spLam" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="spLam">波長</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="spVel" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="spVel">光の速さ</label>
+        </div>
+        <div id="spRayWrap" class="form-check form-switch" hidden>
+          <input id="spRay" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="spRay">光線</label>
+        </div>
+        <div id="spAngWrap" class="form-check form-switch" hidden>
+          <input id="spAng" class="form-check-input" type="checkbox" role="switch" data-requires="spRay">
+          <label class="form-check-label" for="spAng">入射角・屈折角</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgSp" class="fig" viewBox="0 0 1000 420"></svg>
+  <p class="small text-body-secondary">光の速さ・波長の長さは見やすい縮尺で描いています。</p>
+</section>
+
+<!-- 光の反射・屈折と全反射 -->
+<section id="tab-refl" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <label>入射角 <var>θ</var><sub>1</sub> <input id="rfTh" class="form-range" type="range" min="0" max="89" step="1" value="30" data-d="0"> <span id="rfThV" class="val"></span>°</label>
+        <label>媒質 1 <var>n</var><sub>1</sub> <input id="rfN1" class="form-range" type="range" min="1" max="2.4" step="0.05" value="1.5" data-d="2"> <span id="rfN1V" class="val"></span></label>
+        <label>媒質 2 <var>n</var><sub>2</sub> <input id="rfN2" class="form-range" type="range" min="1" max="2.4" step="0.05" value="1" data-d="2"> <span id="rfN2V" class="val"></span></label>
+        <button id="rfSwap" class="btn btn-sm btn-outline-secondary">媒質を入れ替える</button>
+      </div>
+      <div class="ctrl">
+        <div class="form-check form-switch">
+          <input id="rfNorm" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="rfNorm"><span class="key dash" style="--c:#888">法線</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="rfRef" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="rfRef"><span class="key" style="--c:#e67e22">反射光</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="rfTr" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="rfTr"><span class="key" style="--c:#a04000">屈折光</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="rfAng" class="form-check-input" type="checkbox" role="switch" data-requires="rfNorm">
+          <label class="form-check-label" for="rfAng">入射角・反射角・屈折角</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="rfCrit" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="rfCrit"><span class="key dash" style="--c:#555">臨界角</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgRf" class="fig" viewBox="0 0 1000 500"></svg>
+  <p class="small text-body-secondary">光線の濃さは反射光・屈折光の強さの目安です。臨界角は n₁ &gt; n₂ のときだけ表示します。</p>
+</section>
+
+<!-- 白色光の分散 -->
+<section id="tab-disp" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="光">
+          <input type="radio" class="btn-check" name="dpLight" id="dpLightW" value="white" checked>
+          <label class="btn btn-outline-success" for="dpLightW">白色光</label>
+          <input type="radio" class="btn-check" name="dpLight" id="dpLightM" value="mono">
+          <label class="btn btn-outline-success" for="dpLightM">単色光</label>
+        </div>
+        <label id="dpLCtrl" hidden><span id="dpKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="dpL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="dpLV" class="val"></span> nm</label>
+        <label>入射角 <var>i</var> <input id="dpI" class="form-range" type="range" min="40" max="80" step="5" value="50" data-d="0"> <span id="dpIV" class="val"></span>°</label>
+        <div class="form-check form-switch">
+          <input id="dpNorm" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="dpNorm"><span class="key dash" style="--c:#888">法線</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="dpScreen" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="dpScreen">スクリーン</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgDp" class="fig" viewBox="0 0 1000 480"></svg>
+  <p class="small text-body-secondary">屈折率の波長による違いは誇張して描いています。</p>
+</section>
+
+<!-- 凸レンズと凹レンズ -->
+<section id="tab-lens" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="レンズの種類">
+          <input type="radio" class="btn-check" name="lnType" id="lnTypeX" value="cvx" checked>
+          <label class="btn btn-outline-primary" for="lnTypeX">凸レンズ</label>
+          <input type="radio" class="btn-check" name="lnType" id="lnTypeC" value="ccv">
+          <label class="btn btn-outline-primary" for="lnTypeC">凹レンズ</label>
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="題材">
+          <input type="radio" class="btn-check" name="lnSub" id="lnSubP" value="par" checked data-reset-time>
+          <label class="btn btn-outline-success" for="lnSubP">平行光線</label>
+          <input type="radio" class="btn-check" name="lnSub" id="lnSubO" value="obj" data-reset-time>
+          <label class="btn btn-outline-success" for="lnSubO">物体と像</label>
+        </div>
+        <label>焦点距離 <var>f</var> <input id="lnF" class="form-range" type="range" min="5" max="15" step="1" value="10" data-d="0"> <span id="lnFV" class="val"></span> cm</label>
+        <label id="lnACtrl" hidden>物体の位置 <var>a</var> <input id="lnA" class="form-range" type="range" min="2" max="40" step="1" value="30" data-d="0"> <span id="lnAV" class="val"></span> cm</label>
+      </div>
+      <div class="ctrl">
+        <span id="lnObjSw" class="sub" hidden>
+          <span class="form-check form-switch"><input id="lnR1" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="lnR1"><span class="key" style="--c:#d4ac0d">光線①</span></label></span>
+          <span class="form-check form-switch"><input id="lnR2" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="lnR2"><span class="key" style="--c:#e67e22">光線②</span></label></span>
+          <span class="form-check form-switch"><input id="lnR3" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="lnR3"><span class="key" style="--c:#a04000">光線③</span></label></span>
+          <span class="form-check form-switch"><input id="lnImg" class="form-check-input" type="checkbox" role="switch"><label class="form-check-label" for="lnImg"><span class="key" style="--c:#1e8449">像</span></label></span>
+        </span>
+        <div class="form-check form-switch">
+          <input id="lnExt" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="lnExt"><span class="key dash" style="--c:#888">光線の延長</span></label>
+        </div>
+        <div id="lnDistWrap" class="form-check form-switch" hidden>
+          <input id="lnDist" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="lnDist">距離 <var>a</var>, <var>b</var></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgLn" class="fig" viewBox="0 0 1000 440"></svg>
+  <p class="small text-body-secondary">光線①：光軸に平行に入射、光線②：レンズの中心を通る、光線③：焦点を通る（向かう）。</p>
+</section>
+
+<!-- 球面鏡 -->
+<section id="tab-mirror" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="鏡の種類">
+          <input type="radio" class="btn-check" name="mrType" id="mrTypeC" value="ccv" checked>
+          <label class="btn btn-outline-primary" for="mrTypeC">凹面鏡</label>
+          <input type="radio" class="btn-check" name="mrType" id="mrTypeX" value="cvx">
+          <label class="btn btn-outline-primary" for="mrTypeX">凸面鏡</label>
+        </div>
+        <div class="btn-group btn-group-sm" role="group" aria-label="題材">
+          <input type="radio" class="btn-check" name="mrSub" id="mrSubP" value="par" checked data-reset-time>
+          <label class="btn btn-outline-success" for="mrSubP">平行光線</label>
+          <input type="radio" class="btn-check" name="mrSub" id="mrSubO" value="obj" data-reset-time>
+          <label class="btn btn-outline-success" for="mrSubO">物体と像</label>
+        </div>
+        <label>焦点距離 <var>f</var> <input id="mrF" class="form-range" type="range" min="5" max="15" step="1" value="10" data-d="0"> <span id="mrFV" class="val"></span> cm</label>
+        <label id="mrACtrl" hidden>物体の位置 <var>a</var> <input id="mrA" class="form-range" type="range" min="2" max="60" step="1" value="30" data-d="0"> <span id="mrAV" class="val"></span> cm</label>
+      </div>
+      <div class="ctrl">
+        <span id="mrObjSw" class="sub" hidden>
+          <span class="form-check form-switch"><input id="mrR1" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="mrR1"><span class="key" style="--c:#d4ac0d">光線①</span></label></span>
+          <span class="form-check form-switch"><input id="mrR2" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="mrR2"><span class="key" style="--c:#e67e22">光線②</span></label></span>
+          <span class="form-check form-switch"><input id="mrR3" class="form-check-input" type="checkbox" role="switch" checked><label class="form-check-label" for="mrR3"><span class="key" style="--c:#a04000">光線③</span></label></span>
+          <span class="form-check form-switch"><input id="mrImg" class="form-check-input" type="checkbox" role="switch"><label class="form-check-label" for="mrImg"><span class="key" style="--c:#1e8449">像</span></label></span>
+        </span>
+        <div class="form-check form-switch">
+          <input id="mrExt" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="mrExt"><span class="key dash" style="--c:#888">光線の延長</span></label>
+        </div>
+        <div id="mrDistWrap" class="form-check form-switch" hidden>
+          <input id="mrDist" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="mrDist">距離 <var>a</var>, <var>b</var></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgMr" class="fig" viewBox="0 0 1000 440"></svg>
+  <p class="small text-body-secondary">光線①：光軸に平行に入射、光線②：鏡の中心（頂点）で反射、光線③：焦点を通る（向かう）。</p>
+</section>
+
+<!-- ヤングの実験 -->
+<section id="tab-young" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <label><span id="ygKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="ygL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="ygLV" class="val"></span> nm</label>
+        <label>スリットの間隔 <var>d</var> <input id="ygD" class="form-range" type="range" min="0.2" max="0.6" step="0.05" value="0.4" data-d="2"> <span id="ygDV" class="val"></span> mm</label>
+      </div>
+      <div class="ctrl">
+        <span class="group">波面</span>
+        <div class="form-check form-switch">
+          <input id="ygCrest" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="ygCrest">山</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="ygTrough" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="ygTrough">谷</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="ygLine" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="ygLine"><span class="key" style="--c:#c0392b">強め合う線</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="ygNode" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="ygNode"><span class="key dash" style="--c:#2f6fb3">弱め合う線</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="ygScreen" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="ygScreen">スクリーンの明暗</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgYg" class="fig" viewBox="0 0 1000 520"></svg>
+  <p class="small text-body-secondary">波長・スリットの間隔・スクリーンまでの距離は見やすい縮尺で描いています。</p>
+</section>
+
+<!-- 回折格子 -->
+<section id="tab-grating" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="光">
+          <input type="radio" class="btn-check" name="grLight" id="grLightM" value="mono" checked data-reset-time>
+          <label class="btn btn-outline-success" for="grLightM">単色光</label>
+          <input type="radio" class="btn-check" name="grLight" id="grLightW" value="white" data-reset-time>
+          <label class="btn btn-outline-success" for="grLightW">白色光</label>
+        </div>
+        <label id="grLCtrl"><span id="grKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="grL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="grLV" class="val"></span> nm</label>
+        <label>格子定数 <var>d</var> <input id="grD" class="form-range" type="range" min="1" max="3" step="0.1" value="2" data-d="1"> <span id="grDV" class="val"></span> μm</label>
+      </div>
+      <div class="ctrl">
+        <div id="grWaveWrap" class="form-check form-switch">
+          <input id="grWave" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="grWave">波面</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="grDir" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="grDir">回折光の向き</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="grScreen" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="grScreen">スクリーン</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgGr" class="fig" viewBox="0 0 1000 520"></svg>
+  <p class="small text-body-secondary">スリットは 5 本だけ描いています。</p>
+</section>
+
+<!-- 薄膜による干渉 -->
+<section id="tab-film" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <label><span id="fmKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="fmL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="fmLV" class="val"></span> nm</label>
+        <label>膜の厚さ <var>d</var> <input id="fmD" class="form-range" type="range" min="0" max="1000" step="10" value="200" data-d="0"> <span id="fmDV" class="val"></span> nm</label>
+        <label>屈折率 <var>n</var> <input id="fmN" class="form-range" type="range" min="1.2" max="1.8" step="0.01" value="1.33" data-d="2"> <span id="fmNV" class="val"></span></label>
+        <label>入射角 <var>i</var> <input id="fmI" class="form-range" type="range" min="0" max="60" step="5" value="30" data-d="0"> <span id="fmIV" class="val"></span>°</label>
+      </div>
+      <div class="ctrl">
+        <div class="form-check form-switch">
+          <input id="fmW1" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="fmW1"><span class="key" style="--c:#2f6fb3">反射光①</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="fmW2" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="fmW2"><span class="key" style="--c:#c0392b">反射光②</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="fmSum" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="fmSum"><span class="key" style="--c:#1e8449">合成波</span></label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="fmColor" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="fmColor">白色光での膜の色</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgFm" class="fig" viewBox="0 0 1000 500"></svg>
+  <p class="small text-body-secondary">膜の厚さは見やすく描いています。反射光①は膜の表面で位相が π ずれます。</p>
+</section>
+
+<!-- くさび形空気層 -->
+<section id="tab-wedge" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="見る光">
+          <input type="radio" class="btn-check" name="wdObs" id="wdObsR" value="refl" checked>
+          <label class="btn btn-outline-success" for="wdObsR">反射光</label>
+          <input type="radio" class="btn-check" name="wdObs" id="wdObsT" value="trans">
+          <label class="btn btn-outline-success" for="wdObsT">透過光</label>
+        </div>
+        <label><span id="wdKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="wdL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="wdLV" class="val"></span> nm</label>
+        <label>すき間の厚さ <var>D</var> <input id="wdD" class="form-range" type="range" min="2" max="10" step="1" value="4" data-d="0"> <span id="wdDV" class="val"></span> μm</label>
+      </div>
+      <div class="ctrl">
+        <div class="form-check form-switch">
+          <input id="wdRay" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="wdRay">光線</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="wdDark" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="wdDark"><span class="key dash" style="--c:#888">暗線の位置</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgWd" class="fig" viewBox="0 0 1000 540"></svg>
+  <p class="small text-body-secondary">空気層の厚さは誇張して描いています。</p>
+</section>
+
+<!-- ニュートンリング -->
+<section id="tab-newton" role="tabpanel" hidden>
+  <div class="card bg-body-tertiary mb-3">
+    <div class="card-body py-2">
+      <div class="ctrl">
+        <div class="btn-group btn-group-sm" role="group" aria-label="見る光">
+          <input type="radio" class="btn-check" name="nwObs" id="nwObsR" value="refl" checked>
+          <label class="btn btn-outline-success" for="nwObsR">反射光</label>
+          <input type="radio" class="btn-check" name="nwObs" id="nwObsT" value="trans">
+          <label class="btn btn-outline-success" for="nwObsT">透過光</label>
+        </div>
+        <label><span id="nwKey" class="key" style="--c:#f80">波長</span> <var>λ</var> <input id="nwL" class="form-range" type="range" min="400" max="700" step="10" value="600" data-d="0"> <span id="nwLV" class="val"></span> nm</label>
+        <label>レンズの曲率半径 <var>R</var> <input id="nwR" class="form-range" type="range" min="0.5" max="4" step="0.5" value="2" data-d="1"> <span id="nwRV" class="val"></span> m</label>
+      </div>
+      <div class="ctrl">
+        <div class="form-check form-switch">
+          <input id="nwRay" class="form-check-input" type="checkbox" role="switch" checked>
+          <label class="form-check-label" for="nwRay">光線</label>
+        </div>
+        <div class="form-check form-switch">
+          <input id="nwDark" class="form-check-input" type="checkbox" role="switch">
+          <label class="form-check-label" for="nwDark"><span class="key dash" style="--c:#888">暗環の位置</span></label>
+        </div>
+      </div>
+    </div>
+  </div>
+  <svg id="svgNw" class="fig" viewBox="0 0 1000 560"></svg>
+  <p class="small text-body-secondary">レンズのふくらみ（空気層の厚さ）は誇張して描いています。</p>
+</section>
+
+<!-- 再生ボタン（全タブ共通。時刻と再生状態はタブごとに保存） -->
+<div id="controls" class="d-flex flex-wrap align-items-center gap-3 mt-2 mb-3">
+  <div class="btn-group" role="group" aria-label="再生操作">
+    <button id="back" class="btn btn-outline-secondary" title="0.5 秒戻る（←）">◀ 戻る</button>
+    <button id="startstop" class="btn btn-primary" title="再生／停止（スペース）">▶ 再生</button>
+    <button id="next" class="btn btn-outline-secondary" title="0.5 秒進む（→）">進む ▶</button>
+  </div>
+  <button id="reset" class="btn btn-outline-danger">リセット</button>
+  <label class="d-inline-flex align-items-center gap-2">再生速度
+    <select id="speed" class="form-select form-select-sm" style="width:auto">
+      <option value="0.25">0.25 倍</option>
+      <option value="0.5">0.5 倍</option>
+      <option value="1" selected>1 倍</option>
+      <option value="2">2 倍</option>
+    </select>
+  </label>
+  <span class="time"><var>t</var> = <span id="time">0.0</span> s</span>
+</div>
+
+</div>
+
+<script>
+'use strict';
+(() => {
+  /* ============ 共通ユーティリティ ============ */
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const DEG = Math.PI / 180;
+  const FS = 1.2;
+
+  const C = {
+    v1: '#2f6fb3', v2: '#c0392b', sum: '#1e8449', rel: '#8e44ad', acc: '#d35400',
+    r3: '#d35400',   // 3 本目の光線（橙）
+    ray1: '#d4ac0d', ray2: '#e67e22', ray3: '#a04000',   // レンズ・鏡の光線（光なので黄色系統：黄・橙・赤茶）
+    ghost: '#b8bec4', grid: '#e6e6e6',
+    glass: '#d6eaf8', glassLine: '#7fa7c9', medium: '#e3f0fb',
+  };
+
+  function S(tag, attrs = {}, parent) {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) { const v = attrs[k]; if (v != null && v !== false) e.setAttribute(k, v); }
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function T(parent, x, y, str, attrs = {}) {
+    const t = S('text', { x, y, ...attrs, 'font-size': attrs['font-size'] ? attrs['font-size'] * FS : null }, parent);
+    t.textContent = str; return t;
+  }
+  function fmt(v, d = 1) {
+    const s = Math.abs(v).toFixed(d);
+    return (v < 0 && Number(s) !== 0 ? '−' : '') + s;
+  }
+  const val = id => +$(id).value;
+  const chk = id => $(id).checked;
+  const radio = (name, def) => document.querySelector(`input[name="${name}"]:checked`)?.value ?? def;
+  const showIf = (on, ...ids) => { for (const id of ids) $(id)?.toggleAttribute('hidden', !on); };
+
+  function clearFig(svg) {
+    svg.replaceChildren();
+    const vb = svg.viewBox.baseVal, id = svg.id + '-vb';
+    S('rect', { x: vb.x, y: vb.y, width: vb.width, height: vb.height }, S('clipPath', { id }, S('defs', {}, svg)));
+    return S('g', { 'clip-path': `url(#${id})` }, svg);
+  }
+  // 長方形で切り取った描画先（媒質ごとの波面、スクリーンの手前だけの波など）
+  function clipRect(p, id, x, y, width, height) {
+    S('rect', { x, y, width, height }, S('clipPath', { id }, S('defs', {}, p)));
+    return S('g', { 'clip-path': `url(#${id})` }, p);
+  }
+  const setH = (svg, h) => svg.setAttribute('viewBox', `0 0 1000 ${h}`);
+
+  function arrow(p, x1, y1, x2, y2, o = {}) {
+    const c = o.color || '#000', w = o.width || 4;
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 1.5) { S('circle', { cx: x1, cy: y1, r: 4, fill: c }, p); return; }
+    const ux = dx / L, uy = dy / L, hl = Math.min(o.head || 16, L * 0.6), hw = hl * 0.42;
+    const bx = x2 - ux * hl, by = y2 - uy * hl;
+    S('line', { x1, y1, x2: bx, y2: by, stroke: c, 'stroke-width': w, 'stroke-dasharray': o.dash ? '9 6' : null, opacity: o.opacity }, p);
+    S('polygon', { points: `${x2},${y2} ${bx - uy * hw},${by + ux * hw} ${bx + uy * hw},${by - ux * hw}`, fill: c, opacity: o.opacity }, p);
+  }
+  function vlabel(p, x, y, sym, sub, color, o = {}) {
+    const fs = (o.size || 24) * FS, anchor = o.anchor || 'middle', pre = o.prefix || '';
+    const g = S('g', { class: 'halo' }, p);
+    const t = S('text', { x, y, fill: color, 'font-size': fs, 'text-anchor': anchor, 'dominant-baseline': 'central' }, g);
+    if (pre) S('tspan', {}, t).textContent = pre;
+    S('tspan', { 'font-style': 'italic', 'font-weight': o.vec ? 'bold' : null }, t).textContent = sym;
+    if (sub) S('tspan', { 'font-size': fs * 0.65, dy: fs * 0.28, 'font-style': /^[a-z]$/.test(sub) ? 'italic' : 'normal' }, t).textContent = sub;
+  }
+  function vec(p, x1, y1, x2, y2, color, lab, o = {}) {
+    arrow(p, x1, y1, x2, y2, { color, dash: o.dash, width: o.width, opacity: o.opacity });
+    if (!lab) return;
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    let lx, ly;
+    if (o.at === 'above' || o.at === 'below') {
+      lx = (x1 + x2) / 2; ly = Math.min(y1, y2) + (o.at === 'above' ? -(o.off ?? 20) : (o.off ?? 22));
+      if (L < 1.5) lx = x1;
+    } else if (o.at === 'tip' && L >= 1.5) {
+      const off = o.off ?? 24; lx = x2 + dx / L * off; ly = y2 + dy / L * off;
+    } else {
+      const off = o.off ?? 20, s = o.side ?? 1, nx = L ? -dy / L : 0, ny = L ? dx / L : -1;
+      lx = (x1 + x2) / 2 + nx * off * s; ly = (y1 + y2) / 2 + ny * off * s;
+    }
+    if (o.valText && chk('showVal')) {   // 光の速さなど、矢印の長さが実際の値に比例しない量は値を文字で渡す
+      T(p, lx, ly, o.valText, { class: 'halo', fill: color, 'font-size': 21, 'font-weight': 'bold', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
+      return;
+    }
+    vlabel(p, lx, ly, lab[0], lab[1], color, o.label || {});
+  }
+  const seconds = t => { const a = []; for (let k = 0; k <= t + 1e-9; k++) a.push(k); return a; };
+
+  /* ---- 光（光学）の部品 ---- */
+  // 波長 [nm] → RGB（0〜1）。可視光の端は暗くする
+  function wlRGB(nm) {
+    let r = 0, g = 0, b = 0;
+    if (nm < 440) { r = (440 - nm) / 60; b = 1; }
+    else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+    else if (nm < 510) { g = 1; b = (510 - nm) / 20; }
+    else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+    else if (nm < 645) { r = 1; g = (645 - nm) / 65; }
+    else r = 1;
+    const f = nm < 420 ? 0.3 + 0.7 * (nm - 380) / 40 : nm > 700 ? 0.3 + 0.7 * (780 - nm) / 80 : 1;
+    return [r, g, b].map(c => Math.pow(Math.max(0, c * f), 0.8));
+  }
+  const rgbStr = ([r, g, b], k = 1) => `rgb(${[r, g, b].map(c => Math.round(255 * Math.min(1, Math.max(0, c * k)))).join(',')})`;
+  const wlColor = nm => rgbStr(wlRGB(nm));                 // 黒い背景（スクリーン・干渉縞）の上に描く色
+  const wlInk = nm => {                                     // 白い背景の上でも見えるよう、明るい色（黄など）を暗くした色
+    const c = wlRGB(nm), L = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
+    return rgbStr(c, Math.min(1, 0.62 / L));
+  };
+  const setKey = (id, nm) => $(id)?.style.setProperty('--c', wlInk(nm));
+  const WHITE = Array.from({ length: 31 }, (_, i) => 400 + i * 10);   // 白色光を 10 nm ごとの単色光で表す
+
+  // 白色光を、波長ごとの強さ I(λ)（0〜1）で重ねた色
+  const WHITE_SUM = WHITE.reduce((s, nm) => { const c = wlRGB(nm); return [s[0] + c[0], s[1] + c[1], s[2] + c[2]]; }, [0, 0, 0]);
+  function mixColor(I) {
+    const s = [0, 0, 0];
+    for (const nm of WHITE) { const c = wlRGB(nm), w = I(nm); s[0] += c[0] * w; s[1] += c[1] * w; s[2] += c[2] * w; }
+    return rgbStr(s.map((v, i) => v / WHITE_SUM[i]));
+  }
+
+  // 光線の途中に向きを示す矢じり
+  function midArrow(p, x1, y1, x2, y2, color, at = 0.5) {
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 50) return;
+    const ux = dx / L, uy = dy / L, mx = x1 + dx * at + ux * 7, my = y1 + dy * at + uy * 7, hl = 16, hw = 7;
+    const bx = mx - ux * hl, by = my - uy * hl;
+    S('polygon', { points: `${mx},${my} ${bx - uy * hw},${by + ux * hw} ${bx + uy * hw},${by - ux * hw}`, fill: color }, p);
+  }
+  // 光線（折れ線）。各区間の中ほどに矢じり。o.dash で破線（延長線）
+  function ray(p, pts, color, o = {}) {
+    if (pts.length < 2) return;
+    S('path', { d: pts.map((q, i) => (i ? 'L' : 'M') + q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(''), fill: 'none', stroke: color,
+      'stroke-width': o.width || 3, 'stroke-dasharray': o.dash ? '8 6' : null, opacity: o.opacity, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, p);
+    if (!o.noArrow) for (let i = 0; i + 1 < pts.length; i++) midArrow(p, ...pts[i], ...pts[i + 1], color, o.at ?? 0.5);
+  }
+  // 折れ線の始めから長さ s までの部分（光が進んでいく様子）
+  function trunc(pts, s) {
+    const out = [pts[0]];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], L = Math.hypot(x2 - x1, y2 - y1);
+      if (s <= L) { out.push([x1 + (x2 - x1) * s / L, y1 + (y2 - y1) * s / L]); return out; }
+      s -= L; out.push(pts[i + 1]);
+    }
+    return out;
+  }
+  const pathLen = pts => pts.reduce((s, q, i) => i ? s + Math.hypot(q[0] - pts[i - 1][0], q[1] - pts[i - 1][1]) : 0, 0);
+  // (x, y) から向き (dx, dy) に進んで、box の端に着く点
+  function toEdge(x, y, dx, dy, box) {
+    let t = Infinity;
+    if (dx > 1e-12) t = Math.min(t, (box.x1 - x) / dx);
+    if (dx < -1e-12) t = Math.min(t, (box.x0 - x) / dx);
+    if (dy > 1e-12) t = Math.min(t, (box.y1 - y) / dy);
+    if (dy < -1e-12) t = Math.min(t, (box.y0 - y) / dy);
+    if (!isFinite(t)) t = 0;
+    return [x + dx * t, y + dy * t];
+  }
+  // 屈折（ベクトル形）。d：入射の向き（単位）、nrm：境界の法線（進む側の媒質へ向く単位）、eta = n1/n2。全反射なら null
+  function refract(d, nrm, eta) {
+    const ci = d[0] * nrm[0] + d[1] * nrm[1], k = 1 - eta * eta * (1 - ci * ci);
+    if (k < 0) return null;
+    const ct = Math.sqrt(k);
+    return [eta * d[0] + (ct - eta * ci) * nrm[0], eta * d[1] + (ct - eta * ci) * nrm[1]];
+  }
+  // 半直線 P + s d と線分 AB の交点の s（なければ null）
+  function segHit(P, d, A, B) {
+    const ex = B[0] - A[0], ey = B[1] - A[1], den = d[0] * ey - d[1] * ex;
+    if (Math.abs(den) < 1e-12) return null;
+    const wx = A[0] - P[0], wy = A[1] - P[1];
+    const s = (wx * ey - wy * ex) / den, u = (wx * d[1] - wy * d[0]) / den;
+    return s > 1e-6 && u >= -1e-9 && u <= 1 + 1e-9 ? s : null;
+  }
+  // 寸法線（両矢印）とラベル
+  function dimLine(p, x1, y1, x2, y2, color, sym, sub = '', o = {}) {
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, L = Math.hypot(x2 - x1, y2 - y1);
+    if (L < 4) return;
+    const nx = -(y2 - y1) / L, ny = (x2 - x1) / L, tk = 9;
+    arrow(p, mx, my, x1, y1, { color, width: 1.6, head: Math.min(11, L / 2.5) });
+    arrow(p, mx, my, x2, y2, { color, width: 1.6, head: Math.min(11, L / 2.5) });
+    for (const [x, y] of [[x1, y1], [x2, y2]]) S('line', { x1: x - nx * tk, y1: y - ny * tk, x2: x + nx * tk, y2: y + ny * tk, stroke: color, 'stroke-width': 1.5 }, p);
+    const off = o.off ?? -22;
+    if (sym) vlabel(p, mx + nx * off, my + ny * off, sym, sub, color, { size: o.size || 24 });
+  }
+  // 物体・像の矢印（光軸から立てる）
+  const objArrow = (p, x, y0, y1, color, dash) => arrow(p, x, y0, x, y1, { color, width: 5, head: 18, dash });
+  // ガラス板（長方形）
+  const glassRect = (p, x, y, w, h) => S('rect', { x, y, width: w, height: h, fill: C.glass, stroke: C.glassLine, 'stroke-width': 1.5 }, p);
+  // 点線の補助線
+  const guide = (p, x1, y1, x2, y2, color = '#999') => S('line', { x1, y1, x2, y2, stroke: color, 'stroke-width': 1.5, 'stroke-dasharray': '3 4' }, p);
+
+  /* ============ タブ（シーン）定義 ============ */
+  const scenes = {};
+
+  /* --- タブ: 光の速さと屈折率 --- */
+  const SP = { c: 160, xb: 400 };   // 光の速さ [px/s]、境界の位置
+  function drawSpeedNorm(t) {
+    const svgEl = $('svgSp'); setH(svgEl, 420);
+    const svg = clearFig(svgEl);
+    const n = val('spN'), nm = val('spL'), lam = nm * 0.2, col = wlInk(nm), c = SP.c, f = c / lam, xb = SP.xb;
+    const cmp = chk('spCmp');
+    const lanes = cmp ? [{ y: 105, vac: true }, { y: 305 }] : [{ y: 225 }];
+    const A = cmp ? 48 : 70;
+    const mt = cmp ? 222 : 0;
+    S('rect', { x: xb, y: mt, width: 1000 - xb, height: 420 - mt, fill: C.medium }, svg);
+    S('line', { x1: xb, y1: mt, x2: xb, y2: 420, stroke: C.glassLine, 'stroke-width': 2 }, svg);
+    if (cmp) {
+      S('line', { x1: 0, y1: mt, x2: 1000, y2: mt, stroke: '#bbb', 'stroke-width': 1.5 }, svg);
+      T(svg, 16, 30, '真空', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+    }
+    T(svg, 16, mt + 30, '真空', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+    T(svg, xb + 16, mt + 30, '媒質', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+
+    for (const lane of lanes) {
+      const ly = lane.y;
+      const inMed = x => !lane.vac && x > xb;
+      const front = Math.min(1000, lane.vac || c * t <= xb ? c * t : xb + (c * t - xb) / n);
+      const phi = x => inMed(x) ? xb / lam + (x - xb) * n / lam : x / lam;
+      S('line', { x1: 0, y1: ly, x2: 1000, y2: ly, stroke: '#ccc', 'stroke-width': 1.5 }, svg);
+      let d = '';
+      for (let x = 0; x <= front + 1e-9; x += 2) d += (x ? 'L' : 'M') + x + ',' + (ly - A * Math.sin(2 * Math.PI * (f * t - phi(x)))).toFixed(1);
+      if (front > 0) d += 'L' + front.toFixed(1) + ',' + (ly - A * Math.sin(2 * Math.PI * (f * t - phi(front)))).toFixed(1);
+      S('path', { d, fill: 'none', stroke: col, 'stroke-width': 4, opacity: lane.vac ? 0.55 : 1 }, svg);
+
+      // 波長：隣り合う山の間隔
+      if (chk('spLam') && t > 0) {
+        const crests = [];
+        for (let k = -400; k <= 400; k++) {
+          const ph = f * t - 0.25 - k;   // 山の位相
+          let x;
+          if (lane.vac) x = lam * ph;
+          else { x = lam * ph; if (x > xb) x = xb + (lam / n) * (ph - xb / lam); }
+          if (x >= 0 && x <= front) crests.push(x);
+        }
+        crests.sort((a, b) => a - b);
+        const yd = ly - A - 24;
+        const pick = (lo, hi) => { const cs = crests.filter(x => x >= lo && x <= hi); return cs.length >= 2 ? [cs[cs.length - 2], cs[cs.length - 1]] : null; };
+        const air = pick(10, Math.min(xb, front) - 4);
+        if (air && (!lane.vac || front <= xb)) {
+          for (const x of air) guide(svg, x, yd, x, ly - A);
+          dimLine(svg, air[0], yd, air[1], yd, '#333', 'λ', '', { off: -20 });
+        }
+        if (front > xb + 10) {
+          const md = pick(xb + 4, front);
+          if (md) {
+            for (const x of md) guide(svg, x, yd, x, ly - A);
+            dimLine(svg, md[0], yd, md[1], yd, '#333', lane.vac ? 'λ' : 'λ′', '', { off: -20 });
+          }
+        }
+      }
+      // 光の速さ（先端に矢印）
+      if (chk('spVel') && front > 0 && front < 1000) {
+        const slow = !lane.vac && front > xb, L = slow ? 100 / n : 100, yv = ly + A + 30;
+        vec(svg, front, yv, front + L, yv, '#333', [slow ? 'v' : 'c', ''], { at: 'below', off: 22, width: 3,
+          valText: slow ? `${(3.0 / n).toFixed(1)}×10⁸ m/s` : '3.0×10⁸ m/s' });
+      }
+    }
+  }
+  function drawSpeedObl(t) {
+    const svgEl = $('svgSp'); setH(svgEl, 480);
+    const svg = clearFig(svgEl);
+    const n = val('spN'), nm = val('spL'), lam = nm * 0.2, col = wlInk(nm), c = SP.c, f = c / lam;
+    const yb = 240, O = [500, yb];
+    const th1 = val('spTh') * DEG, s1 = Math.sin(th1), c1 = Math.cos(th1), s2 = s1 / n, c2 = Math.sqrt(1 - s2 * s2), th2 = Math.asin(s2);
+    S('rect', { x: 0, y: yb, width: 1000, height: 480 - yb, fill: C.medium }, svg);
+    S('line', { x1: 0, y1: yb, x2: 1000, y2: yb, stroke: C.glassLine, 'stroke-width': 2 }, svg);
+    T(svg, 16, 30, '真空', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+    T(svg, 16, yb + 30, '媒質', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+
+    // 波面（山）。真空：dx s1 + dy c1 = P、媒質：dx s1 + dy n c2 = P（境界で途切れずにつながる）
+    const air = clipRect(svg, 'spAir', 0, 0, 1000, yb), med = clipRect(svg, 'spMed', 0, yb, 1000, 480 - yb);
+    const m0 = Math.floor(f * t - 1500 / lam), m1 = Math.ceil(f * t + 1500 / lam);
+    for (let m = m0; m <= m1; m++) {
+      const P = lam * (f * t - m);
+      const ax = O[0] + P * s1, ay = O[1] + P * c1;
+      S('line', { x1: ax - c1 * 1500, y1: ay + s1 * 1500, x2: ax + c1 * 1500, y2: ay - s1 * 1500, stroke: col, 'stroke-width': 3 }, air);
+      const bx = O[0] + P * s1 / (n * n), by = O[1] + P * c2 / n, ux = c2, uy = -s1 / n;
+      S('line', { x1: bx - ux * 1500, y1: by - uy * 1500, x2: bx + ux * 1500, y2: by + uy * 1500, stroke: col, 'stroke-width': 3 }, med);
+    }
+    const Li = 320;
+    if (chk('spRay')) {
+      S('line', { x1: O[0], y1: 20, x2: O[0], y2: 460, stroke: '#888', 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }, svg);
+      ray(svg, [[O[0] - Li * s1, O[1] - Li * c1], O, [O[0] + Li * s2, O[1] + Li * c2]], '#333', { width: 3 });
+      if (chk('spAng')) {
+        const r = 70;
+        if (th1 > 0.01) {
+          S('path', { d: `M${O[0]},${O[1] - r} A${r},${r} 0 0 0 ${O[0] - r * s1},${O[1] - r * c1}`, fill: 'none', stroke: '#333', 'stroke-width': 1.5 }, svg);
+          vlabel(svg, O[0] - (r + 26) * Math.sin(th1 / 2), O[1] - (r + 26) * Math.cos(th1 / 2), 'θ', '1', '#333');
+        }
+        if (th2 > 0.01) {
+          S('path', { d: `M${O[0]},${O[1] + r} A${r},${r} 0 0 0 ${O[0] + r * s2},${O[1] + r * c2}`, fill: 'none', stroke: '#333', 'stroke-width': 1.5 }, svg);
+          vlabel(svg, O[0] + (r + 26) * Math.sin(th2 / 2), O[1] + (r + 26) * Math.cos(th2 / 2), 'θ', '2', '#333');
+        }
+      }
+    }
+    // 波長（光線に沿った山の間隔）。光線の右側に寸法線
+    if (chk('spLam')) {
+      const P0 = lam * (f * t - Math.floor(f * t)), off = 46;
+      // 真空：光線上の位置 s（O から入射側が負）
+      let sb = P0; while (sb > -20) sb -= lam;
+      const sa = sb - lam, nx1 = c1, ny1 = -s1;
+      const pA = [O[0] + sa * s1 - nx1 * off, O[1] + sa * c1 - ny1 * off], pB = [O[0] + sb * s1 - nx1 * off, O[1] + sb * c1 - ny1 * off];
+      dimLine(svg, pA[0], pA[1], pB[0], pB[1], '#333', 'λ', '', { off: -24 });
+      // 媒質：光線上の位置 u = P / n（O から屈折側が正）
+      let ua = P0 / n; while (ua < 60) ua += lam / n;
+      const ub = ua + lam / n, nx2 = c2, ny2 = -s2;
+      const qA = [O[0] + ua * s2 + nx2 * off, O[1] + ua * c2 + ny2 * off], qB = [O[0] + ub * s2 + nx2 * off, O[1] + ub * c2 + ny2 * off];
+      dimLine(svg, qA[0], qA[1], qB[0], qB[1], '#333', 'λ′', '', { off: 24 });
+    }
+    // 光の速さ（光線の左側に）
+    if (chk('spVel')) {
+      const off = -50, a0 = -320, b0 = 70;
+      const p1 = [O[0] + a0 * s1 - c1 * off, O[1] + a0 * c1 + s1 * off];
+      vec(svg, p1[0], p1[1], p1[0] + 100 * s1, p1[1] + 100 * c1, '#333', ['c', ''], { at: 'tip', off: 22, width: 3, valText: '3.0×10⁸ m/s' });
+      const p2 = [O[0] + b0 * s2 + c2 * off, O[1] + b0 * c2 - s2 * off];
+      vec(svg, p2[0], p2[1], p2[0] + 100 / n * s2, p2[1] + 100 / n * c2, '#333', ['v', ''], { at: 'tip', off: 22, width: 3, valText: `${(3.0 / n).toFixed(1)}×10⁸ m/s` });
+    }
+  }
+  scenes['tab-speed'] = {
+    tMax: () => radio('spSub', 'norm') === 'norm' ? (SP.xb + (1000 - SP.xb) * val('spN')) / SP.c : 60,
+    draw(t) {
+      const sub = radio('spSub', 'norm');
+      showIf(sub === 'obl', 'spThCtrl', 'spRayWrap', 'spAngWrap');
+      showIf(sub === 'norm', 'spCmpWrap');
+      setKey('spKey', val('spL'));
+      sub === 'norm' ? drawSpeedNorm(t) : drawSpeedObl(t);
+    },
+  };
+
+  /* --- タブ: 光の反射・屈折と全反射 --- */
+  // 入射角 θ1 だけを動かして、反射＋屈折 → 臨界角 → 全反射 を連続して見せる。光線の濃さ＝フレネルの反射率・透過率
+  const RF = { H: 500, yb: 250, x0: 500, Li: 200, c: 260 };   // c：真空中の光の速さ [px/s]
+  const nFill = n => `rgba(93,173,226,${(0.6 * (n - 1) / 1.4).toFixed(3)})`;   // 屈折率が大きいほど濃い水色
+  function rfGeom() {
+    const n1 = val('rfN1'), n2 = val('rfN2'), th = val('rfTh') * DEG;
+    const O = [RF.x0, RF.yb], d = [Math.sin(th), Math.cos(th)];
+    const S0 = [O[0] - RF.Li * d[0], O[1] - RF.Li * d[1]];
+    const box = { x0: 0, y0: 0, x1: 1000, y1: RF.H };
+    const dr = [d[0], -d[1]], dt = refract(d, [0, 1], n1 / n2);
+    const Er = toEdge(...O, ...dr, box), Et = dt && toEdge(...O, ...dt, box);
+    // 反射率（s 偏光・p 偏光の平均）
+    let R = 1;
+    if (dt) {
+      const ci = d[1], ct = dt[1];
+      const rs = (n1 * ci - n2 * ct) / (n1 * ci + n2 * ct), rp = (n2 * ci - n1 * ct) / (n2 * ci + n1 * ct);
+      R = (rs * rs + rp * rp) / 2;
+    }
+    const v1 = RF.c / n1, v2 = RF.c / n2, t1 = RF.Li / v1;
+    const crit = n1 > n2 ? Math.asin(n2 / n1) : null;
+    return { n1, n2, th, O, d, S0, dr, dt, Er, Et, R, v1, v2, t1, crit };
+  }
+  function arcAt(p, O, r, a0, a1, sym, sub, color = '#333') {   // 角度は鉛直下向きから時計回り（SVG 座標）
+    const P = a => [O[0] - r * Math.sin(a), O[1] + r * Math.cos(a)];
+    const [xa, ya] = P(a0), [xb, yb] = P(a1), am = (a0 + a1) / 2;
+    S('path', { d: `M${xa.toFixed(1)},${ya.toFixed(1)} A${r},${r} 0 0 ${a1 > a0 ? 1 : 0} ${xb.toFixed(1)},${yb.toFixed(1)}`, fill: 'none', stroke: color, 'stroke-width': 1.6 }, p);
+    const q = [O[0] - (r + 26) * Math.sin(am), O[1] + (r + 26) * Math.cos(am)];
+    vlabel(p, q[0], q[1], sym, sub, color);
+  }
+  scenes['tab-refl'] = {
+    tMax() {
+      const g = rfGeom(), lr = Math.hypot(g.Er[0] - g.O[0], g.Er[1] - g.O[1]);
+      const lt = g.Et ? Math.hypot(g.Et[0] - g.O[0], g.Et[1] - g.O[1]) : 0;
+      return g.t1 + Math.max(lr / g.v1, lt / g.v2);
+    },
+    draw(t) {
+      const svg = clearFig($('svgRf'));
+      const g = rfGeom(), O = g.O;
+      const crOn = g.crit != null;
+      $('rfCrit').disabled = !crOn;
+
+      // 媒質（屈折率が大きいほど濃く）
+      S('rect', { x: 0, y: 0, width: 1000, height: RF.yb, fill: nFill(g.n1) }, svg);
+      S('rect', { x: 0, y: RF.yb, width: 1000, height: RF.H - RF.yb, fill: nFill(g.n2) }, svg);
+      S('line', { x1: 0, y1: RF.yb, x2: 1000, y2: RF.yb, stroke: C.glassLine, 'stroke-width': 2 }, svg);
+      T(svg, 16, 30, '媒質 1', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+      T(svg, 16, RF.yb + 30, '媒質 2', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+
+      if (chk('rfNorm')) S('line', { x1: O[0], y1: 10, x2: O[0], y2: RF.H - 10, stroke: '#888', 'stroke-width': 1.5, 'stroke-dasharray': '6 5' }, svg);
+
+      // 臨界角：θc で入射した光は境界に沿って進む
+      if (crOn && chk('rfCrit')) {
+        const sc = Math.sin(g.crit), cc = Math.cos(g.crit);
+        S('line', { x1: O[0] - 230 * sc, y1: O[1] - 230 * cc, x2: O[0], y2: O[1], stroke: '#555', 'stroke-width': 2, 'stroke-dasharray': '8 6' }, svg);
+        S('line', { x1: O[0], y1: O[1], x2: 1000, y2: O[1], stroke: '#555', 'stroke-width': 2, 'stroke-dasharray': '8 6' }, svg);
+        S('path', { d: `M${O[0]},${O[1] - 150} A150,150 0 0 0 ${(O[0] - 150 * sc).toFixed(1)},${(O[1] - 150 * cc).toFixed(1)}`, fill: 'none', stroke: '#555', 'stroke-width': 1.5 }, svg);
+        vlabel(svg, O[0] - 176 * Math.sin(g.crit / 2), O[1] - 176 * Math.cos(g.crit / 2), 'θ', 'c', '#555');
+      }
+
+      // 光源（レーザー）
+      const [ux, uy] = g.d, Lb = 46, Wb = 20, S0 = g.S0;
+      const bx = S0[0] - ux * Lb, by = S0[1] - uy * Lb;
+      S('polygon', { points: [[bx - uy * Wb / 2, by + ux * Wb / 2], [S0[0] - uy * Wb / 2, S0[1] + ux * Wb / 2], [S0[0] + uy * Wb / 2, S0[1] - ux * Wb / 2], [bx + uy * Wb / 2, by - ux * Wb / 2]].map(q => q.map(v => v.toFixed(1)).join(',')).join(' '),
+        fill: '#555', stroke: '#222', 'stroke-width': 1.5 }, svg);
+
+      // 光線（光が進んでいく様子）。濃さ＝強さ
+      const op = I => 0.25 + 0.75 * Math.min(1, I);
+      ray(svg, trunc([S0, O], g.v1 * t), C.ray1, { width: 4 });
+      const t2 = t - g.t1;
+      if (t2 > 0) {
+        if (chk('rfRef')) ray(svg, trunc([O, g.Er], g.v1 * t2), C.ray2, { width: 4, opacity: op(Math.sqrt(g.R)) });
+        if (chk('rfTr') && g.dt) ray(svg, trunc([O, g.Et], g.v2 * t2), C.ray3, { width: 4, opacity: op(Math.sqrt(1 - g.R)) });
+      }
+
+      // 入射角・反射角・屈折角
+      if (chk('rfNorm') && chk('rfAng') && g.th > 0.01) {
+        const r = 70;
+        if (g.v1 * t > RF.Li - r) arcAt(svg, O, r, Math.PI, Math.PI - g.th, 'θ', '1');
+        if (t2 * g.v1 > r && chk('rfRef')) arcAt(svg, O, r, Math.PI, Math.PI + g.th, 'θ', '1′');
+        if (g.dt && t2 * g.v2 > r && chk('rfTr')) arcAt(svg, O, r, 0, -Math.asin(g.dt[0]), 'θ', '2');
+      }
+    },
+  };
+  $('rfSwap').addEventListener('click', () => {
+    const a = $('rfN1').value; $('rfN1').value = $('rfN2').value; $('rfN2').value = a;
+    for (const id of ['rfN1', 'rfN2']) $(id).dispatchEvent(new Event('input'));
+  });
+
+  /* --- タブ: 白色光の分散 --- */
+  const nGlass = nm => 1.52 + 0.0105 / ((nm / 1000) ** 2);   // 波長による屈折率の違い（見やすく誇張）
+  scenes['tab-disp'] = {
+    static: true,
+    tMax: () => 0,
+    draw() {
+      const svg = clearFig($('svgDp'));
+      const white = radio('dpLight', 'white') === 'white', nm0 = val('dpL');
+      showIf(!white, 'dpLCtrl');
+      setKey('dpKey', nm0);
+      const A = [400, 60], B = [400 - 219.4, 440], Cv = [400 + 219.4, 440];
+      S('polygon', { points: [A, B, Cv].map(q => q.join(',')).join(' '), fill: C.glass, stroke: C.glassLine, 'stroke-width': 2 }, svg);
+      const nIn = [Math.cos(30 * DEG), Math.sin(30 * DEG)];      // 左の面の法線（プリズムの内側へ）
+      const nOut = [Math.cos(-30 * DEG), Math.sin(-30 * DEG)];   // 右の面の法線（外側へ）
+      const E = [A[0] + 0.42 * (B[0] - A[0]), A[1] + 0.42 * (B[1] - A[1])];
+      const ia = val('dpI') * DEG, rot = (v, a) => [v[0] * Math.cos(a) - v[1] * Math.sin(a), v[0] * Math.sin(a) + v[1] * Math.cos(a)];
+      const d0 = rot(nIn, -ia);
+      const xs = 900, box = { x0: 0, x1: xs, y0: 0, y1: 480 };
+      const start = toEdge(E[0], E[1], -d0[0], -d0[1], { x0: 0, x1: 1000, y0: 0, y1: 480 });
+      // スクリーン
+      const scr = chk('dpScreen');
+      if (scr) S('rect', { x: xs, y: 0, width: 16, height: 480, fill: '#333' }, svg);
+      const list = white ? WHITE : [nm0];
+      const hits = [];
+      const g = S('g', { 'stroke-linecap': 'round' }, svg);
+      for (const nm of list) {
+        const n = nGlass(nm), col = wlInk(nm), w = white ? 2 : 4;
+        const d1 = refract(d0, nIn, 1 / n);
+        const s = segHit(E, d1, A, Cv);
+        if (s == null) continue;
+        const X2 = [E[0] + s * d1[0], E[1] + s * d1[1]];
+        const d2 = refract(d1, nOut, n);
+        S('line', { x1: E[0], y1: E[1], x2: X2[0], y2: X2[1], stroke: col, 'stroke-width': w }, g);
+        if (!d2) continue;   // 全反射
+        const end = scr ? toEdge(X2[0], X2[1], d2[0], d2[1], box) : toEdge(X2[0], X2[1], d2[0], d2[1], { x0: 0, x1: 1000, y0: 0, y1: 480 });
+        S('line', { x1: X2[0], y1: X2[1], x2: end[0], y2: end[1], stroke: col, 'stroke-width': w }, g);
+        if (!white) { midArrow(svg, E[0], E[1], X2[0], X2[1], col); midArrow(svg, X2[0], X2[1], end[0], end[1], col); }
+        if (Math.abs(end[0] - xs) < 0.5) hits.push({ nm, y: end[1] });
+      }
+      // 入射光
+      const incCol = white ? '#777' : wlInk(nm0);
+      ray(svg, [start, E], incCol, { width: white ? 6 : 4 });
+      // スクリーン上のスペクトル
+      if (scr && hits.length) {
+        if (white) {
+          for (let i = 0; i + 1 < hits.length; i++) S('rect', { x: xs, y: Math.min(hits[i].y, hits[i + 1].y) - 0.5, width: 16, height: Math.abs(hits[i + 1].y - hits[i].y) + 1, fill: wlColor(hits[i].nm) }, svg);
+          const ends = [hits[0], hits[hits.length - 1]];
+          T(svg, xs + 26, ends[1].y, '赤', { class: 'jp', 'font-size': 18, 'dominant-baseline': 'central', fill: '#333' });
+          T(svg, xs + 26, ends[0].y, '紫', { class: 'jp', 'font-size': 18, 'dominant-baseline': 'central', fill: '#333' });
+        } else S('rect', { x: xs, y: hits[0].y - 4, width: 16, height: 8, fill: wlColor(hits[0].nm) }, svg);
+      }
+      // 法線
+      if (chk('dpNorm')) {
+        const dash = { stroke: '#888', 'stroke-width': 1.5, 'stroke-dasharray': '6 5' };
+        S('line', { x1: E[0] - nIn[0] * 90, y1: E[1] - nIn[1] * 90, x2: E[0] + nIn[0] * 90, y2: E[1] + nIn[1] * 90, ...dash }, svg);
+        const n = nGlass(white ? 550 : nm0), d1 = refract(d0, nIn, 1 / n), s = segHit(E, d1, A, Cv);
+        if (s != null) {
+          const X2 = [E[0] + s * d1[0], E[1] + s * d1[1]];
+          S('line', { x1: X2[0] - nOut[0] * 90, y1: X2[1] - nOut[1] * 90, x2: X2[0] + nOut[0] * 90, y2: X2[1] + nOut[1] * 90, ...dash }, svg);
+        }
+      }
+      if (white) T(svg, start[0] + 10, start[1] + 36, '白色光', { class: 'jp halo', 'font-size': 19, fill: '#555' });
+    },
+  };
+
+  /* --- タブ: 凸レンズと凹レンズ／球面鏡（共通の作図） --- */
+  function imaging(pre, isLens) {
+    const K = 10, ya = 220, xo = isLens ? 500 : 720, Hh = 440;
+    const X = x => xo + x * K, Y = y => ya - y * K, px = q => [X(q[0]), Y(q[1])];
+    const box = { x0: 0, x1: 1000, y0: 0, y1: Hh };
+    const Rv = 900;   // 鏡の描画上の曲率半径 [px]（見やすさのため。光線は焦点の位置で決める）
+    const sgn = () => radio(pre + 'Type', isLens ? 'cvx' : 'ccv') === (isLens ? 'cvx' : 'ccv') ? 1 : -1;   // 集める（凸レンズ・凹面鏡）= +1
+    const sag = y => { const yy = Math.min(Math.abs(y * K), Rv); return (Rv - Math.sqrt(Rv * Rv - yy * yy)) / K; };
+    const surfX = (y, s) => isLens ? 0 : -s * sag(y);   // 鏡面の x [cm]（頂点 = 0）
+    function hit(P, d, s) {
+      if (isLens) return [0, P[1] + (-P[0]) / d[0] * d[1]];
+      let y = P[1] + (-P[0]) / d[0] * d[1];
+      for (let i = 0; i < 6; i++) y = P[1] + (surfX(y, s) - P[0]) / d[0] * d[1];
+      return [surfX(y, s), y];
+    }
+    const edge = (q, d) => toEdge(X(q[0]), Y(q[1]), d[0], -d[1], box);
+    const C_LIGHT = 400;   // 光が進む速さ（アニメーション）[px/s]
+    const parYs = [-8, -6, -4, -2, 0, 2, 4, 6, 8];
+
+    function drawOptic(p, s) {
+      S('line', { x1: 0, y1: ya, x2: 1000, y2: ya, stroke: '#666', 'stroke-width': 1.5 }, p);
+      const fAbs = val(pre + 'F');
+      if (isLens) {
+        const x = X(0), h = 180;
+        const d = s > 0
+          ? `M${x},${ya - h} Q${x + 34},${ya} ${x},${ya + h} Q${x - 34},${ya} ${x},${ya - h}Z`
+          : `M${x - 18},${ya - h} L${x + 18},${ya - h} Q${x + 2},${ya} ${x + 18},${ya + h} L${x - 18},${ya + h} Q${x - 2},${ya} ${x - 18},${ya - h}Z`;
+        S('path', { d, fill: C.glass, stroke: C.glassLine, 'stroke-width': 2, opacity: 0.9 }, p);
+        for (const xf of [-fAbs, fAbs]) {
+          S('circle', { cx: X(xf), cy: ya, r: 5, fill: '#000' }, p);
+          T(p, X(xf), ya + 30, 'F', { 'font-size': 20, 'text-anchor': 'middle', class: 'halo' });
+        }
+      } else {
+        let d = '';
+        for (let y = -18; y <= 18.001; y += 0.5) d += (y > -18 ? 'L' : 'M') + X(surfX(y, s)).toFixed(1) + ',' + Y(y).toFixed(1);
+        for (let y = -17; y <= 17.001; y += 1.5) S('line', { x1: X(surfX(y, s)) + 2, y1: Y(y), x2: X(surfX(y, s)) + 14, y2: Y(y) + 10, stroke: '#666', 'stroke-width': 1.5 }, p);
+        S('path', { d, fill: 'none', stroke: '#2c3e50', 'stroke-width': 4 }, p);
+        const xf = -s * fAbs;
+        S('circle', { cx: X(xf), cy: ya, r: 5, fill: '#000' }, p);
+        T(p, X(xf), ya + 30, 'F', { 'font-size': 20, 'text-anchor': 'middle', class: 'halo' });
+      }
+    }
+
+    function parRays(s) {
+      const f = s * val(pre + 'F'), xF = isLens ? f : -f;   // 光が集まる（または広がり出す）点
+      const x0 = -xo / K;
+      return parYs.map(y => {
+        const H = [surfX(y, s), y], dOut = [s * (xF - H[0]), s * (-y)];
+        return { H, xF, pts: [px([x0, y]), px(H), edge(H, dOut)] };
+      });
+    }
+    function drawPar(svg, t) {
+      const s = sgn(), col = C.ray1;
+      drawOptic(svg, s);
+      const rays = parRays(s), L = C_LIGHT * t;
+      for (const r of rays) {
+        const tp = trunc(r.pts, L);
+        ray(svg, tp, col, { width: 2.5, at: 0.6 });
+        if (s < 0 && chk(pre + 'Ext') && L > pathLen(r.pts.slice(0, 2))) {
+          const h = px(r.H);
+          ray(svg, [h, px([r.xF, 0])], col, { dash: true, noArrow: true, width: 2, opacity: 0.7 });
+        }
+      }
+    }
+    function drawObj(svg) {
+      const s = sgn(), f = s * val(pre + 'F'), a = val(pre + 'A'), h = 6, P = [-a, h];
+      drawOptic(svg, s);
+      const noImg = Math.abs(a - f) < 1e-9;
+      const b = noImg ? Infinity : a * f / (a - f), real = b > 0, xi = isLens ? b : -b, hi = -b / a * h, Q = [xi, hi];
+      const xFo = isLens ? f : -f;   // 平行光線が集まる（広がり出す）焦点
+      const list = [{ id: 'R1', col: C.ray1, dIn: [1, 0], one: true }, { id: 'R2', col: C.ray2, dIn: [a, -h] }];
+      const Fp = [-f, 0], dx3 = Fp[0] - P[0];
+      if (Math.abs(dx3) > 1e-6) list.push({ id: 'R3', col: C.ray3, dIn: dx3 > 0 ? [dx3, -h] : [-dx3, h], aim: Fp });
+      for (const r of list) {
+        if (!chk(pre + r.id)) continue;
+        const H = hit(P, r.dIn, s);
+        let dOut;
+        if (noImg) dOut = isLens ? [1, -h / a] : [-f, -h];
+        else dOut = real ? [Q[0] - H[0], Q[1] - H[1]] : [H[0] - Q[0], H[1] - Q[1]];
+        if (r.aim && r.aim[0] > H[0] + 1e-6) ray(svg, [px(H), px(r.aim)], r.col, { dash: true, noArrow: true, width: 1.5, opacity: 0.6 });   // 向こう側の焦点へ向かう
+        if (r.aim && r.aim[0] < P[0] - 1e-6) ray(svg, [px(r.aim), px(P)], r.col, { dash: true, noArrow: true, width: 1.5, opacity: 0.6 });   // 手前の焦点から出たように進む
+        ray(svg, [px(P), px(H), edge(H, dOut)], r.col, { width: 3 });
+        if (chk(pre + 'Ext') && !noImg && !real) {
+          let target = Q;
+          if (r.one && s < 0 && Math.abs(xFo - H[0]) > Math.abs(Q[0] - H[0])) target = [xFo, 0];
+          ray(svg, [px(H), px(target)], r.col, { dash: true, noArrow: true, width: 2, opacity: 0.8 });
+        }
+      }
+      objArrow(svg, X(-a), Y(0), Y(h), '#333');
+      if (chk(pre + 'Img') && !noImg) objArrow(svg, X(xi), Y(0), Y(hi), C.sum, !real);
+      if (chk(pre + 'Dist')) {
+        const yd = Y(-11);
+        guide(svg, X(-a), Y(0), X(-a), yd);
+        dimLine(svg, X(-a), yd, X(0), yd, '#333', 'a', '', { off: 20 });
+        if (chk(pre + 'Img') && !noImg && Math.abs(X(xi) - 500) < 520) {
+          const yb = Y(-16);
+          guide(svg, X(xi), Y(0), X(xi), yb);
+          guide(svg, X(0), Y(0), X(0), yb);
+          dimLine(svg, X(0), yb, X(xi), yb, C.sum, 'b', '', { off: 20 });
+        }
+      }
+    }
+    return {
+      get static() { return radio(pre + 'Sub', 'par') !== 'par'; },
+      tMax() {
+        if (radio(pre + 'Sub', 'par') !== 'par') return 0;
+        return Math.max(...parRays(sgn()).map(r => pathLen(r.pts))) / C_LIGHT;
+      },
+      draw(t) {
+        const obj = radio(pre + 'Sub', 'par') === 'obj';
+        showIf(obj, pre + 'ACtrl', pre + 'ObjSw', pre + 'DistWrap');
+        $(pre + 'Ext').closest('.form-check').hidden = !obj && sgn() > 0;   // 平行光線を集めるときは延長線がない
+        const svg = clearFig($('svg' + (isLens ? 'Ln' : 'Mr')));
+        obj ? drawObj(svg) : drawPar(svg, t);
+      },
+    };
+  }
+  scenes['tab-lens'] = imaging('ln', true);
+  scenes['tab-mirror'] = imaging('mr', false);
+
+  /* --- タブ: ヤングの実験 --- */
+  scenes['tab-young'] = {
+    tMax: () => 60,
+    draw(t) {
+      const svg = clearFig($('svgYg'));
+      const H = 520, yc = 260, xb = 140, xs = 540, c = 60;
+      const nm = val('ygL'), lam = nm * 0.06, d = val('ygD') * 300, col = wlInk(nm);
+      setKey('ygKey', nm);
+      const S1 = [xb, yc - d / 2], S2 = [xb, yc + d / 2];
+      const crest = chk('ygCrest'), trough = chk('ygTrough');
+      // 入射する平面波
+      const left = clipRect(svg, 'ygLeft', 0, 0, xb, H);
+      for (let k = 0; ; k++) {
+        const x = c * t - k * lam;
+        if (x < -lam) break;
+        if (crest && x >= 0) S('line', { x1: x, y1: 0, x2: x, y2: H, stroke: col, 'stroke-width': 2.5 }, left);
+        const xt = x - lam / 2;
+        if (trough && xt >= 0) S('line', { x1: xt, y1: 0, x2: xt, y2: H, stroke: col, 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, left);
+      }
+      // スリットからの円形波
+      const field = clipRect(svg, 'ygField', xb, 0, xs - xb, H);
+      const tb = xb / c;
+      for (const Sp of [S1, S2]) for (let k = 0; ; k++) {
+        const r = c * (t - tb) - k * lam;
+        if (r < -lam) break;
+        if (r > 700) continue;
+        if (crest && r > 0) S('circle', { cx: Sp[0], cy: Sp[1], r, fill: 'none', stroke: col, 'stroke-width': 2.5 }, field);
+        const rt = r - lam / 2;
+        if (trough && rt > 0) S('circle', { cx: Sp[0], cy: Sp[1], r: rt, fill: 'none', stroke: col, 'stroke-width': 1.5, 'stroke-dasharray': '4 5' }, field);
+      }
+      // 強め合う線・弱め合う線（経路差 = mλ、(m + 1/2)λ）
+      const diff = (x, y) => Math.hypot(x - S1[0], y - S1[1]) - Math.hypot(x - S2[0], y - S2[1]);
+      const curve = D => {
+        let s = '';
+        for (let x = xb + 3; x <= xs; x += 5) {
+          let lo = -3000, hi = 3000;
+          for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (diff(x, m) < D) lo = m; else hi = m; }
+          s += (s ? 'L' : 'M') + x + ',' + lo.toFixed(1);
+        }
+        return s;
+      };
+      for (const [on, half, color, dash] of [[chk('ygLine'), 0, C.v2, null], [chk('ygNode'), 0.5, C.v1, '10 7']]) {
+        if (!on) continue;
+        for (let m = -20; m <= 20; m++) {
+          const D = (m + half) * lam;
+          if (Math.abs(D) >= d - 0.5) continue;
+          S('path', { d: curve(D), fill: 'none', stroke: color, 'stroke-width': 4, 'stroke-dasharray': dash, opacity: 0.85 }, field);
+        }
+      }
+      // 仕切り（スリット）とスクリーン
+      const gap = 8;
+      for (const [y1, y2] of [[0, S1[1] - gap], [S1[1] + gap, S2[1] - gap], [S2[1] + gap, H]]) S('rect', { x: xb - 5, y: y1, width: 10, height: y2 - y1, fill: '#333' }, svg);
+      T(svg, xb - 14, S1[1], 'S₁', { 'font-size': 20, 'text-anchor': 'end', 'dominant-baseline': 'central', class: 'halo' });
+      T(svg, xb - 14, S2[1], 'S₂', { 'font-size': 20, 'text-anchor': 'end', 'dominant-baseline': 'central', class: 'halo' });
+      const I = y => Math.cos(Math.PI * diff(xs, y) / lam) ** 2;
+      S('rect', { x: xs, y: 0, width: 14, height: H, fill: '#555' }, svg);
+      // 右：スクリーンの明暗と明るさのグラフ（縦の位置はスクリーンと同じ）
+      S('line', { x1: 600, y1: 10, x2: 600, y2: H - 10, stroke: '#ccc', 'stroke-width': 1.5 }, svg);
+      const scr = chk('ygScreen');
+      S('rect', { x: 640, y: 10, width: 80, height: H - 20, fill: '#000' }, svg);
+      if (scr) {
+        for (let y = 10; y < H - 10; y += 2) S('rect', { x: 640, y, width: 80, height: 2.2, fill: wlColor(nm), opacity: I(y + 1).toFixed(3) }, svg);
+        for (let y = 0; y < H; y += 2) S('rect', { x: xs, y, width: 14, height: 2.2, fill: wlColor(nm), opacity: I(y + 1).toFixed(3) }, svg);
+        let dd = '';
+        for (let y = 10; y <= H - 10; y += 2) dd += (y > 10 ? 'L' : 'M') + (770 + 190 * I(y)).toFixed(1) + ',' + y;
+        S('path', { d: dd, fill: 'none', stroke: col, 'stroke-width': 3 }, svg);
+      }
+      S('line', { x1: 770, y1: H - 10, x2: 770, y2: 14, stroke: '#000', 'stroke-width': 1.5 }, svg);
+      arrow(svg, 770, yc, 985, yc, { color: '#000', width: 1.5, head: 10 });
+      T(svg, 978, yc + 30, '明るさ', { class: 'jp', 'font-size': 16, 'text-anchor': 'end' });
+      S('line', { x1: xs + 14, y1: yc, x2: 600, y2: yc, stroke: '#999', 'stroke-dasharray': '3 4' }, svg);
+      S('line', { x1: 0, y1: yc, x2: xb - 5, y2: yc, stroke: '#ccc', 'stroke-dasharray': '3 4' }, svg);
+    },
+  };
+
+  /* --- タブ: 回折格子 --- */
+  scenes['tab-grating'] = {
+    tMax: () => radio('grLight', 'mono') === 'mono' ? 60 : 0,
+    get static() { return radio('grLight', 'mono') !== 'mono'; },
+    draw(t) {
+      const svg = clearFig($('svgGr'));
+      const H = 520, yc = 260, xg = 170, xr = 580, c = 40, N = 5;
+      const white = radio('grLight', 'mono') === 'white';
+      const nm = val('grL'), dum = val('grD'), dpx = dum * 40, lam = nm / 1000 * 40, col = wlInk(nm);
+      showIf(!white, 'grLCtrl', 'grWaveWrap');
+      setKey('grKey', nm);
+      const ys = Array.from({ length: N }, (_, j) => yc + (j - (N - 1) / 2) * dpx);
+      // 入射する平面波・スリットからの波
+      if (!white && chk('grWave')) {
+        const left = clipRect(svg, 'grLeft', 0, 0, xg, H);
+        for (let k = 0; ; k++) { const x = c * t - k * lam; if (x < 0) break; S('line', { x1: x, y1: 0, x2: x, y2: H, stroke: col, 'stroke-width': 2 }, left); }
+        const field = clipRect(svg, 'grField', xg, 0, xr - xg, H);
+        const tb = xg / c;
+        for (const y of ys) for (let k = 0; ; k++) {
+          const r = c * (t - tb) - k * lam;
+          if (r <= 0) break;
+          if (r < 650) S('circle', { cx: xg, cy: y, r, fill: 'none', stroke: col, 'stroke-width': 1.8 }, field);
+        }
+      } else if (white) ray(svg, [[0, yc], [xg, yc]], '#777', { width: 6 });
+      // 回折光の向き（d sinθ = mλ）
+      const orders = lamNm => { const a = []; const M = Math.floor(dum / (lamNm / 1000) + 1e-9); for (let m = -M; m <= M; m++) { const sn = m * lamNm / 1000 / dum; if (Math.abs(sn) < 0.999) a.push({ m, th: Math.asin(sn) }); } return a; };
+      if (chk('grDir')) {
+        const L = 300;
+        const list = white ? WHITE.filter(v => v % 20 === 0) : [nm];
+        for (const v of list) for (const o of orders(v)) {
+          if (white && o.m === 0) continue;
+          const ex = xg + L * Math.cos(o.th), ey = yc + L * Math.sin(o.th);
+          if (white) S('line', { x1: xg, y1: yc, x2: ex, y2: ey, stroke: wlInk(v), 'stroke-width': 2 }, svg);
+          else {
+            arrow(svg, xg, yc, ex, ey, { color: '#333', width: 3 });
+            T(svg, xg + (L + 26) * Math.cos(o.th), yc + (L + 26) * Math.sin(o.th), fmt(o.m, 0), { 'font-size': 20, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'halo' });
+          }
+        }
+        if (white) arrow(svg, xg, yc, xg + L, yc, { color: '#777', width: 4 });
+      }
+      // 格子
+      const slit = 5;
+      for (let j = 0; j <= N; j++) {
+        const y1 = j === 0 ? 0 : ys[j - 1] + slit, y2 = j === N ? H : ys[j] - slit;
+        S('rect', { x: xg - 4, y: y1, width: 8, height: y2 - y1, fill: '#333' }, svg);
+      }
+      // 右：遠くのスクリーン（y = L tanθ）
+      S('line', { x1: 600, y1: 10, x2: 600, y2: H - 10, stroke: '#ccc', 'stroke-width': 1.5 }, svg);
+      S('rect', { x: 650, y: 10, width: 120, height: H - 20, fill: '#000' }, svg);
+      const Ls = 200, yOf = th => yc + Ls * Math.tan(th);
+      if (chk('grScreen')) {
+        const inS = y => y > 14 && y < H - 14;
+        if (white) {
+          S('circle', { cx: 710, cy: yc, r: 8, fill: '#fff' }, svg);
+          for (let m = 1; m <= 6; m++) for (const sg of [1, -1]) for (let i = 0; i + 1 < WHITE.length; i++) {   // 次数ごとに連続したスペクトルの帯
+            const s1 = sg * m * WHITE[i] / 1000 / dum, s2 = sg * m * WHITE[i + 1] / 1000 / dum;
+            if (Math.abs(s2) >= 0.999) break;
+            const ya = yOf(Math.asin(s1)), yb = yOf(Math.asin(s2));
+            if (inS(ya) && inS(yb)) S('rect', { x: 680, y: Math.min(ya, yb) - 0.4, width: 60, height: Math.abs(yb - ya) + 0.8, fill: wlColor(WHITE[i]), opacity: 0.85, style: 'mix-blend-mode: screen' }, svg);
+          }
+        } else {
+          for (const o of orders(nm)) {
+            const y = yOf(o.th);
+            if (!inS(y)) continue;
+            S('ellipse', { cx: 710, cy: y, rx: 26, ry: 8, fill: wlColor(nm) }, svg);
+            T(svg, 800, y, fmt(o.m, 0), { 'font-size': 20, 'dominant-baseline': 'central' });
+          }
+        }
+      }
+    },
+  };
+
+  /* --- タブ: 薄膜による干渉 --- */
+  scenes['tab-film'] = {
+    static: true,
+    tMax: () => 0,
+    draw() {
+      const svg = clearFig($('svgFm'));
+      const nm = val('fmL'), d = val('fmD'), n = val('fmN'), ia = val('fmI') * DEG;
+      setKey('fmKey', nm);
+      const ra = Math.asin(Math.sin(ia) / n), cr = Math.cos(ra);
+      const yT = 230, tp = 24 + 0.16 * d, yB = yT + tp;
+      // 左：膜と光線
+      const W = 580;
+      S('rect', { x: 0, y: yT, width: W, height: tp, fill: C.glass, stroke: C.glassLine, 'stroke-width': 1.5 }, svg);
+      T(svg, 16, 30, '空気', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+      T(svg, 16, yB + 30, '空気', { class: 'jp', 'font-size': 19, fill: '#555', 'dominant-baseline': 'central' });
+      T(svg, W - 20, (yT + yB) / 2, 'n', { 'font-size': 22, 'font-style': 'italic', 'text-anchor': 'end', 'dominant-baseline': 'central', fill: '#555' });
+      const xA = 230, si = Math.sin(ia), ci = Math.cos(ia), tr = Math.tan(ra);
+      const A = [xA, yT], Bp = [xA + tp * tr, yB], Cp = [xA + 2 * tp * tr, yT], L = 230;
+      const dash = { stroke: '#888', 'stroke-width': 1.5, 'stroke-dasharray': '6 5' };
+      for (const q of [A, Cp]) S('line', { x1: q[0], y1: q[1] - 110, x2: q[0], y2: q[1] + 40, ...dash }, svg);
+      ray(svg, [[xA - L * si, yT - L * ci], A], wlInk(nm), { width: 3.5 });
+      if (chk('fmW1')) ray(svg, [A, [xA + L * si, yT - L * ci]], C.v1, { width: 3 });
+      if (chk('fmW2')) ray(svg, [A, Bp, Cp, [Cp[0] + L * si, yT - L * ci]], C.v2, { width: 3 });
+      // 右：反射光①・②の波と合成波
+      S('line', { x1: 600, y1: 10, x2: 600, y2: 490, stroke: '#ccc', 'stroke-width': 1.5 }, svg);
+      const opd = 2 * n * d * cr;                      // 経路差 [nm]
+      const x0 = 640, x1 = 980, Wv = 170, Aw = 34;
+      const w1 = u => Aw * Math.sin(2 * Math.PI * u + Math.PI);            // 表面で反射（位相が π ずれる）
+      const w2 = u => Aw * Math.sin(2 * Math.PI * (u - opd / nm));        // 下面で反射（経路差だけ遅れる）
+      const rows = [{ y: 70, on: chk('fmW1'), f: w1, col: C.v1, lab: '①' }, { y: 175, on: chk('fmW2'), f: w2, col: C.v2, lab: '②' }, { y: 300, on: chk('fmSum'), f: u => w1(u) + w2(u), col: C.sum, lab: '' }];
+      for (let u = 0.25; u < 2; u += 1) S('line', { x1: x0 + u * Wv, y1: 30, x2: x0 + u * Wv, y2: 370, stroke: '#ddd', 'stroke-width': 1.5, 'stroke-dasharray': '3 4' }, svg);
+      for (const r of rows) {
+        S('line', { x1: x0, y1: r.y, x2: x1, y2: r.y, stroke: '#ccc', 'stroke-width': 1.5 }, svg);
+        if (r.lab) T(svg, x0 - 12, r.y, r.lab, { class: 'jp', 'font-size': 18, 'text-anchor': 'end', 'dominant-baseline': 'central', fill: r.col });
+        if (!r.on) continue;
+        let s = '';
+        for (let x = x0; x <= x1; x += 2) s += (x > x0 ? 'L' : 'M') + x + ',' + (r.y - r.f((x - x0) / Wv)).toFixed(1);
+        S('path', { d: s, fill: 'none', stroke: r.col, 'stroke-width': 3 }, svg);
+      }
+      // 白色光を当てたときの膜の色（厚さ 0〜1000 nm）
+      if (chk('fmColor')) {
+        const sy = 410, sh = 36, X = dd => x0 + (dd / 1000) * (x1 - x0);
+        for (let dd = 0; dd < 1000; dd += 5) {
+          const o = 2 * n * dd * cr;
+          S('rect', { x: X(dd), y: sy, width: (x1 - x0) / 200 + 0.6, height: sh, fill: mixColor(v => (1 - Math.cos(2 * Math.PI * o / v)) / 2) }, svg);
+        }
+        S('rect', { x: x0, y: sy, width: x1 - x0, height: sh, fill: 'none', stroke: '#999' }, svg);
+        S('polygon', { points: `${X(d)},${sy - 2} ${X(d) - 8},${sy - 16} ${X(d) + 8},${sy - 16}`, fill: '#000' }, svg);
+        for (const dd of [0, 500, 1000]) T(svg, X(dd), sy + sh + 22, String(dd), { 'font-size': 16, 'text-anchor': 'middle' });
+        const tx = S('text', { x: x0 - 12, y: sy + sh / 2, 'font-size': 18 * FS, 'text-anchor': 'end', 'dominant-baseline': 'central' }, svg);
+        S('tspan', { 'font-style': 'italic' }, tx).textContent = 'd';
+      }
+    },
+  };
+
+  /* --- タブ: くさび形空気層 --- */
+  scenes['tab-wedge'] = {
+    static: true,
+    tMax: () => 0,
+    draw() {
+      const svg = clearFig($('svgWd'));
+      const nm = val('wdL'), D = val('wdD'), refl = radio('wdObs', 'refl') === 'refl', lamU = nm / 1000;
+      setKey('wdKey', nm);
+      const x0 = 40, xe = 960, xs = 880, yP = 180, g0 = 24 + D * 7;   // 接している端、ガラスの右端、すき間を作る物の位置、下のガラスの上面
+      const gap = x => g0 * (x - x0) / (xs - x0);
+      const thick = x => D * (x - x0) / (xs - x0);                    // 空気層の厚さ [μm]
+      const I = x => { const v = Math.sin(2 * Math.PI * thick(x) / lamU) ** 2; return refl ? v : 1 - v; };
+      // 横から見た図
+      glassRect(svg, x0, yP, xe - x0, 26);
+      S('polygon', { points: `${x0},${yP} ${xe},${yP - gap(xe)} ${xe},${yP - gap(xe) - 22} ${x0},${yP - 22}`, fill: C.glass, stroke: C.glassLine, 'stroke-width': 1.5 }, svg);
+      S('circle', { cx: xs, cy: yP - g0 / 2, r: g0 / 2, fill: '#888' }, svg);
+      dimLine(svg, xs + g0 / 2 + 16, yP, xs + g0 / 2 + 16, yP - g0, '#333', 'D', '', { off: -22, size: 20 });
+      // 上から見た図（暗い背景に干渉縞）
+      const y1 = 250, y2 = 530;
+      S('rect', { x: x0, y: y1, width: xe - x0, height: y2 - y1, fill: '#000' }, svg);
+      const cl = wlColor(nm);
+      for (let x = x0; x < xe; x += 2) S('rect', { x, y: y1, width: 2.3, height: y2 - y1, fill: cl, opacity: I(x + 1).toFixed(3) }, svg);
+      // 暗線の位置：反射光は 2t = mλ、透過光は 2t = (m + 1/2)λ
+      if (chk('wdDark')) {
+        for (let m = 0; ; m++) {
+          const tt = (m + (refl ? 0 : 0.5)) * lamU / 2, x = x0 + tt / D * (xs - x0);
+          if (x > xe) break;
+          guide(svg, x, yP - gap(x), x, y2, '#bbb');
+          S('circle', { cx: x, cy: yP - gap(x) / 2, r: 2.5, fill: '#555' }, svg);
+        }
+      }
+      // 光線（上から入射）
+      if (chk('wdRay')) {
+        const xr = 640, g = gap(xr), top = 20;
+        ray(svg, [[xr, top], [xr, yP]], wlInk(nm), { width: 3, at: 0.35 });
+        if (refl) {
+          ray(svg, [[xr + 12, yP - g], [xr + 12, top]], C.v1, { width: 3, at: 0.5 });
+          ray(svg, [[xr + 24, yP], [xr + 24, top]], C.v2, { width: 3, at: 0.35 });
+          S('circle', { cx: xr + 12, cy: yP - g, r: 4, fill: C.v1 }, svg);
+          S('circle', { cx: xr + 24, cy: yP, r: 4, fill: C.v2 }, svg);
+        } else ray(svg, [[xr, yP], [xr, y1 - 8]], wlInk(nm), { width: 3 });
+      }
+    },
+  };
+
+  /* --- タブ: ニュートンリング --- */
+  scenes['tab-newton'] = {
+    static: true,
+    tMax: () => 0,
+    draw() {
+      const svg = clearFig($('svgNw'));
+      const nm = val('nwL'), R = val('nwR'), refl = radio('nwObs', 'refl') === 'refl', lamU = nm / 1000;
+      setKey('nwKey', nm);
+      const cx = 500, K = 140, yP = 190, x0 = 40, x1 = 960;   // 140 px = 1 mm
+      const thick = rpx => (rpx / K) ** 2 / (2 * R);           // 空気層の厚さ [μm]（r [mm]、R [m]）
+      const gpx = rpx => 30 * thick(rpx);                      // 図の中のすき間（誇張）
+      const I = rpx => { const v = Math.sin(2 * Math.PI * thick(rpx) / lamU) ** 2; return refl ? v : 1 - v; };
+      // 横から見た図
+      glassRect(svg, x0, yP, x1 - x0, 26);
+      const top = 40;
+      let d = `M${x0},${top}`;
+      for (let x = x0; x <= x1; x += 4) d += `L${x},${Math.max(top + 6, yP - gpx(x - cx)).toFixed(1)}`;
+      d += `L${x1},${top}Z`;
+      S('path', { d, fill: C.glass, stroke: C.glassLine, 'stroke-width': 1.5 }, svg);
+      // 上から見た図
+      const y1 = 240, y2 = 550, cy = (y1 + y2) / 2;
+      S('rect', { x: x0, y: y1, width: x1 - x0, height: y2 - y1, fill: '#000' }, svg);
+      const view = clipRect(svg, 'nwView', x0, y1, x1 - x0, y2 - y1);
+      const cl = wlColor(nm);
+      S('circle', { cx, cy, r: 1.2, fill: cl, opacity: I(0) }, view);
+      for (let r = 1; r < 650; r += 2) S('circle', { cx, cy, r, fill: 'none', stroke: cl, 'stroke-width': 2.3, opacity: I(r).toFixed(3) }, view);
+      // 暗環の位置：反射光は r² = mλR、透過光は r² = (m + 1/2)λR
+      if (chk('nwDark')) {
+        for (let m = 0; ; m++) {
+          const r = Math.sqrt((m + (refl ? 0 : 0.5)) * lamU * R) * K;
+          if (r > cx - x0) break;
+          for (const x of r ? [cx - r, cx + r] : [cx]) {
+            guide(svg, x, yP - gpx(x - cx), x, cy, '#bbb');
+            S('circle', { cx: x, cy: yP - gpx(x - cx) / 2, r: 2.5, fill: '#555' }, svg);
+          }
+        }
+      }
+      // 光線
+      if (chk('nwRay')) {
+        const xr = cx + 300, g = gpx(300), tp = 8;
+        ray(svg, [[xr, tp], [xr, yP]], wlInk(nm), { width: 3, at: 0.3 });
+        if (refl) {
+          ray(svg, [[xr + 12, yP - g], [xr + 12, tp]], C.v1, { width: 3, at: 0.6 });
+          ray(svg, [[xr + 24, yP], [xr + 24, tp]], C.v2, { width: 3, at: 0.3 });
+          S('circle', { cx: xr + 12, cy: yP - g, r: 4, fill: C.v1 }, svg);
+          S('circle', { cx: xr + 24, cy: yP, r: 4, fill: C.v2 }, svg);
+        } else ray(svg, [[xr, yP], [xr, y1 - 8]], wlInk(nm), { width: 3 });
+      }
+    },
+  };
+
+  /* ============ タブ切替・再生制御（全タブ共通） ============ */
+  for (const s of Object.values(scenes)) { s.t = 0; s.running = false; }
+  const tabButtons = [...document.querySelectorAll('[data-tab]')];
+  let active = tabButtons[0].dataset.tab;
+  const cur = () => scenes[active];
+
+  function render() {
+    for (const el of document.querySelectorAll('[data-requires]')) el.disabled = !chk(el.dataset.requires);
+    const s = cur();
+    s.t = Math.max(0, Math.min(s.t, s.tMax()));
+    s.draw(s.t);
+    $('time').textContent = s.t.toFixed(Math.abs(s.t * 10 - Math.round(s.t * 10)) > 1e-6 && !s.running ? 2 : 1);
+    $('startstop').textContent = s.running ? '❚❚ 停止' : '▶ 再生';
+    $('controls').classList.toggle('d-none', !!s.static);
+  }
+
+  function selectTab(btn) {
+    cur().running = false;
+    active = btn.dataset.tab;
+    for (const b of tabButtons) { const on = b === btn; b.classList.toggle('active', on); b.setAttribute('aria-selected', on); }
+    for (const b of tabButtons) $(b.dataset.tab).hidden = b !== btn;
+    $('pageTitle').textContent = btn.dataset.title;
+    render();
+  }
+  for (const b of tabButtons) b.addEventListener('click', () => selectTab(b));
+
+  for (const r of document.querySelectorAll('input[type=range][data-d]')) {
+    const out = $(r.id + 'V'), upd = () => { out.textContent = fmt(+r.value, +r.dataset.d); };
+    upd();
+    r.addEventListener('input', () => { upd(); render(); });
+  }
+  for (const i of document.querySelectorAll('section input[type=checkbox], section input[type=radio]')) i.addEventListener('change', render);
+  $('showVal').addEventListener('change', render);
+  for (const b of document.querySelectorAll('[data-preset]')) b.addEventListener('click', () => {
+    for (const [id, v] of Object.entries(JSON.parse(b.dataset.preset))) { $(id).value = v; $(id).dispatchEvent(new Event('input')); }
+  });
+  for (const i of document.querySelectorAll('input[data-reset-time]')) i.addEventListener('change', () => { const s = cur(); s.running = false; s.t = 0; render(); });
+
+  const togglePlay = () => {
+    const s = cur();
+    if (!s.running && s.t >= s.tMax() - 1e-9) s.t = 0;
+    s.running = !s.running; render();
+  };
+  const step = d => {
+    const s = cur(), h = s.dt ? s.dt() : 0.5, k = s.t / h;
+    s.running = false;
+    s.t = (d > 0 ? Math.floor(k + 1e-6) + 1 : Math.ceil(k - 1e-6) - 1) * h;
+    render();
+  };
+  $('startstop').addEventListener('click', togglePlay);
+  $('back').addEventListener('click', () => step(-0.5));
+  $('next').addEventListener('click', () => step(0.5));
+  $('reset').addEventListener('click', () => { const s = cur(); s.running = false; s.t = 0; render(); });
+  document.addEventListener('keydown', e => {
+    if (e.target.closest?.('input, select, textarea')) return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'ArrowLeft') step(-0.5);
+    else if (e.key === 'ArrowRight') step(0.5);
+  });
+
+  let last = null;
+  function tick(ms) {
+    const s = cur();
+    if (s.running && last !== null) {
+      s.t += (ms - last) / 1000 * +$('speed').value;
+      if (s.t >= s.tMax()) { s.t = s.tMax(); s.running = false; }
+      render();
+    }
+    last = ms;
+    requestAnimationFrame(tick);
+  }
+  render();
+  requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
